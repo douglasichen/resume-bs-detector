@@ -160,7 +160,7 @@ export const handler: Handler = async (event, context) => {
     await sendEmail(
       email,
       "Your resume has been scanned for bullsh*t!",
-      `<p>Your resume has been processed. You can view the results <a href="${domain}?id=${id}">here</a>.</p>`
+      `<p>Your resume has been processed. You can view the results <a href="${domain}/${id}">here</a>.</p>`
     );
   } catch (error) {
     await sendEmail(
