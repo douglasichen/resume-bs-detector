@@ -106,7 +106,7 @@ export const handler: Handler = async (event, context) => {
   await s3.send(new PutObjectCommand({
     Bucket: RESUME_S3_BUCKET_NAME,
     Key: id,
-    Body: fileBuffer,
+    Body: resume,
   }));
 
   console.log(`UPLOADED RESUME TO S3: ${id}`);

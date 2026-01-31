@@ -122,5 +122,35 @@ export class SkillDiffStack extends cdk.Stack {
     // const processResumeLambdaUrl = processResumeLambda.addFunctionUrl({
     //   authType: lambda.FunctionUrlAuthType.NONE,
     // });
+
+    const fetchResultsLambda = new lambda.Function(this, "FetchResultsLambda", {
+      code: lambda.Code.fromAsset("lambda/fetchResults"),
+      handler: "index.handler",
+      runtime: lambda.Runtime.NODEJS_24_X,
+      timeout: Duration.seconds(60 * 10),
+      environment: {
+        DYNAMODB_TABLE_NAME: db.tableName,
+        S3_BUCKET_NAME: resumeS3.bucketName,
+      },
+    });
+
+    const fetchResultsApi = new apigateway.RestApi(this, "FetchResultsApi", {
+      restApiName: "ThrottledPublicService",
+      deployOptions: {
+        stageName: "prod",
+        throttlingRateLimit: 10,
+        throttlingBurstLimit: 10,
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+      },
+    });
+
+    const fetchResultsIntegration = new apigateway.LambdaIntegration(fetchResultsLambda);
+    fetchResultsApi.root.addMethod("GET", fetchResultsIntegration);
+
+    resumeS3.grantRead(fetchResultsLambda);
+    db.grantReadData(fetchResultsLambda);
   }
 }
