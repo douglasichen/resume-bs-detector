@@ -11,12 +11,21 @@ export class SkillDiffStack extends cdk.Stack {
     super(scope, id, props);
 
     // The code that defines your stack goes here
-    const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
-    if (!FIRECRAWL_API_KEY) throw new Error('FIRECRAWL_API_KEY is not set');
+    
+    const REDUCTO_API_KEY = process.env.REDUCTO_API_KEY || '';
+    const PIPELINE_ID = process.env.PIPELINE_ID || '';
     const processResumeLambda = new lambda.Function(this, 'ProcessResumeLambda', {
       code: lambda.Code.fromAsset('lambda/processResume'),
       handler: 'index.handler',
       runtime: lambda.Runtime.NODEJS_24_X,
+      environment: {
+        REDUCTO_API_KEY,
+        PIPELINE_ID,
+      },
+    });
+
+    const processResumeLambdaUrl = processResumeLambda.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
     });
 
 

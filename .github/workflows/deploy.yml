@@ -32,10 +32,13 @@ jobs:
         run: |
           cd lambda/processResume
           npm ci
+          npm run build
           cd ../researchCandidate
           npm ci
+          npm run build
           cd ../researchCandidateTavily
           npm ci
+          npm run build
       - name: CDK Deploy
         run: npx cdk deploy --require-approval never
         env:
