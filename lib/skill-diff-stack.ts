@@ -15,7 +15,6 @@ const env = {
 };
 
 export class SkillDiffStack extends cdk.Stack {
-  private createSecureProcessResumeLambda() {}
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -40,6 +39,7 @@ export class SkillDiffStack extends cdk.Stack {
         environment: {
           REDUCTO_API_KEY: env.REDUCTO_API_KEY,
           PIPELINE_ID: env.PIPELINE_ID,
+          OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
         },
         timeout: Duration.seconds(60 * 10),
       }
@@ -83,6 +83,8 @@ export class SkillDiffStack extends cdk.Stack {
     //   },
     //   timeout: Duration.seconds(60 * 10),
     // });
+
+
 
     const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
     if (!TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not set");
