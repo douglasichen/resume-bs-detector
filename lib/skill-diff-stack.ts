@@ -54,7 +54,7 @@ export class SkillDiffStack extends cdk.Stack {
       onSuccess: new destinations.LambdaDestination(processResumeLambda),
     });
 
-    const api = new apigateway.RestApi(this, 'ProcessResumeApi', {
+    const api = new apigateway.RestApi(this, 'SendResumeApi', {
       restApiName: 'ThrottledPublicService',
       deployOptions: {
         stageName: 'prod',
@@ -80,7 +80,6 @@ export class SkillDiffStack extends cdk.Stack {
     //   timeout: Duration.seconds(60 * 10),
     // });
 
-    sendResumeLambda.grantInvoke(processResumeLambda);
 
     const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
     if (!TAVILY_API_KEY) throw new Error('TAVILY_API_KEY is not set');
