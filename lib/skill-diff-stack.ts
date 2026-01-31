@@ -50,8 +50,13 @@ export class SkillDiffStack extends cdk.Stack {
       handler: "index.handler",
       runtime: lambda.Runtime.NODEJS_24_X,
       timeout: Duration.seconds(60 * 10),
-      onSuccess: new destinations.LambdaDestination(processResumeLambda),
+      environment: {
+        PROCESS_RESUME_LAMBDA_ARN: processResumeLambda.functionArn,
+      },
     });
+
+    // Grant sendResumeLambda permission to invoke processResumeLambda
+    processResumeLambda.grantInvoke(sendResumeLambda);
 
     const api = new apigateway.RestApi(this, "SendResumeApi", {
       restApiName: "ThrottledPublicService",
@@ -65,30 +70,9 @@ export class SkillDiffStack extends cdk.Stack {
         allowMethods: apigateway.Cors.ALL_METHODS,
       },
     });
-    const integration = new apigateway.LambdaIntegration(sendResumeLambda, {
-      proxy: false, // Disable proxy to manipulate headers
-      requestParameters: {
-        // Force Async invocation
-        "integration.request.header.X-Amz-Invocation-Type": "'Event'",
-      },
-      requestTemplates: {
-        // Pass request body to Lambda
-        "application/json": '$input.json("$")',
-      },
-      integrationResponses: [
-        {
-          statusCode: "202", // Return Accepted immediately
-        },
-      ],
-    });
 
-    api.root.addMethod("POST", integration, {
-      methodResponses: [
-        {
-          statusCode: "202",
-        },
-      ],
-    });
+    const integration = new apigateway.LambdaIntegration(sendResumeLambda);
+    api.root.addMethod("POST", integration);
 
     // const researchCandidateLambda = new lambda.Function(this, 'ResearchCandidateLambda', {
     //   code: lambda.Code.fromAsset('lambda/researchCandidate'),

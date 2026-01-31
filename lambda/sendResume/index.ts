@@ -1,6 +1,7 @@
 import { Handler } from 'aws-lambda';
 import Reducto, { toFile } from 'reductoai';
 import { randomUUID } from 'crypto';
+import { Lambda } from "@aws-sdk/client-lambda";
 
 const headers = {
   'Content-Type': 'application/json',
@@ -8,6 +9,7 @@ const headers = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+const lambda = new Lambda({ region: "us-east-1" });
 
 export const handler: Handler = async (event, context) => {
   // Handle preflight OPTIONS request
@@ -23,16 +25,28 @@ export const handler: Handler = async (event, context) => {
     const body = JSON.parse(event.body || '{}');
     const email = body?.email || '';
     const resumes = body?.resumes || [];
-    if (resumes.length === 0) throw new Error('At least one resumes is required');
-    if (resumes.length > 1) console.warn('Only 1 resume is supported at this time, ignoring the rest');
+    
+    const processResumeLambdaArn = process.env.PROCESS_RESUME_LAMBDA_ARN;
+    if (!processResumeLambdaArn) throw new Error('PROCESS_RESUME_LAMBDA_ARN is not set');
+
+    const payload = {
+      email,
+      resumes,
+    };
+
+    console.log(`Invoking process resume lambda with arn ${processResumeLambdaArn} with payload ${JSON.stringify(payload)}`);
+
+    await lambda.invoke({
+      FunctionName: processResumeLambdaArn,
+      InvocationType: "Event",
+      Payload: JSON.stringify(payload), 
+    });
+
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        email,
-        resumes,
-      }),
+      body: JSON.stringify(payload),
     };
   } catch (error) {
     console.error('Error processing resume:', error);
