@@ -5,6 +5,7 @@ import { ParseResponse } from "reductoai/src/resources/shared";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { Lambda } from "@aws-sdk/client-lambda";
 
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -25,7 +26,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
 }
 
 async function getClaimQuestions(fullContent: string) {
-  const instructions = `Given the following resume, generate an array of questions for high signal claims. Always start question in the form: "Did {Full name} from {school} do {claim}?"`;
+  const instructions = `Given the following resume, generate an array of questions for high signal claims. Always start question in the form: "Did {Full name} from {school} do {claim}? Don't ask too many questions, and also don't ask questions that are way too specific (metrics). Askq questions like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. `;
 
   const prompt = `${instructions}\n\nResume:\n${fullContent}`;
 
@@ -78,8 +79,21 @@ export const handler: Handler = async (event, context) => {
   console.log(`FULL CONTENT: ${fullContent}`);
 
   const claimQuestions = await getClaimQuestions(fullContent);
-  console.log(`CLAIM QUESTIONS: ${JSON.stringify(claimQuestions)}`);
+  console.log(`CLAIM QUESTIONS: ${JSON.stringify(claimQuestions, null, 2)}`);
 
 
+  const researchCandidateTavilyPayload = {
+    email,
+    questions: claimQuestions,
+    fullContent: fullContent,
+  }
   
+  const researchCandidateTavilyLambdaArn = process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
+  if (!researchCandidateTavilyLambdaArn) throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
+
+  await new Lambda({ region: "us-east-1" }).invoke({
+    FunctionName: researchCandidateTavilyLambdaArn,
+    InvocationType: "Event",
+    Payload: JSON.stringify(researchCandidateTavilyPayload),
+  });
 };

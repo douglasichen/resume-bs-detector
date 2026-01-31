@@ -18,16 +18,19 @@ export class SkillDiffStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
-    // const aiLambda = new lambda.Function(this, 'AiLambda', {
-    //   code: lambda.Code.fromAsset('lambda/ai'),
-    //   handler: 'index.handler',
-    //   runtime: lambda.Runtime.NODEJS_24_X,
-    //   timeout: Duration.seconds(60 * 10),
-    //   environment: {
-    //     OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
-    //   },
-    // });
+    const researchCandidateTavilyLambda = new lambda.Function(
+      this,
+      "ResearchCandidateTavilyLambda",
+      {
+        code: lambda.Code.fromAsset("lambda/researchCandidateTavily"),
+        handler: "index.handler",
+        runtime: lambda.Runtime.NODEJS_24_X,
+        environment: {
+          TAVILY_API_KEY: env.TAVILY_API_KEY,
+        },
+        timeout: Duration.seconds(60 * 10),
+      }
+    );
 
     const processResumeLambda = new lambda.Function(
       this,
@@ -40,6 +43,7 @@ export class SkillDiffStack extends cdk.Stack {
           REDUCTO_API_KEY: env.REDUCTO_API_KEY,
           PIPELINE_ID: env.PIPELINE_ID,
           OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
+          RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN: researchCandidateTavilyLambda.functionArn,
         },
         timeout: Duration.seconds(60 * 10),
       }
@@ -88,19 +92,7 @@ export class SkillDiffStack extends cdk.Stack {
 
     const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
     if (!TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not set");
-    const researchCandidateTavilyLambda = new lambda.Function(
-      this,
-      "ResearchCandidateTavilyLambda",
-      {
-        code: lambda.Code.fromAsset("lambda/researchCandidateTavily"),
-        handler: "index.handler",
-        runtime: lambda.Runtime.NODEJS_24_X,
-        environment: {
-          TAVILY_API_KEY: env.TAVILY_API_KEY,
-        },
-        timeout: Duration.seconds(60 * 10),
-      }
-    );
+    
     // const processResumeLambdaUrl = processResumeLambda.addFunctionUrl({
     //   authType: lambda.FunctionUrlAuthType.NONE,
     // });
