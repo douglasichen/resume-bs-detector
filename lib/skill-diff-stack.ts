@@ -68,7 +68,6 @@ export class SkillDiffStack extends cdk.Stack {
           RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN: researchCandidateTavilyLambda.functionArn,
           RESUME_S3_BUCKET_NAME: resumeS3.bucketName,
           RESEND_API_KEY: env.RESEND_API_KEY,
-          DOMAIN: "https://resume-bs-detector-frontend.vercel.app",
         },
         timeout: Duration.seconds(60 * 10),
       }

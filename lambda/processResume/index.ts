@@ -43,106 +43,20 @@ async function getClaimQuestions(fullContent: string) {
   const result = await ai<SchemaType>(prompt, schema);
   return result.questions;
 }
-export const handler: Handler = async (event, context) => {
-  const apiKey = process.env.REDUCTO_API_KEY;
-  if (!apiKey) {
-    throw new Error("REDUCTO_API_KEY is not set");
-  }
 
-  const PIPELINE_ID = process.env.PIPELINE_ID;
-  if (!PIPELINE_ID) {
-    throw new Error("PIPELINE_ID is not set");
-  }
-
-  const { email, resumes } = event;
-  if (resumes.length === 0) throw new Error("At least one resumes is required");
-  if (resumes.length > 1)
-    console.warn("Only 1 resume is supported at this time, ignoring the rest");
-
-  const resume: string = resumes[0];
-  const client = new Reducto({ apiKey });
-
-  const id = randomUUID();
-  const filename = `${email}-${id}.pdf`;
-  const fileBuffer = Buffer.from(resume, "base64");
-
-  console.log(`UPLOADING RESUME TO REDUCTO: ${filename}`);
-  const upload = await client.upload({
-    file: await toFile(fileBuffer, filename, { type: "application/pdf" }),
-  });
-
-  console.log(`UPLOADED RESUME TO REDUCTO`);
-
-  const reductoResult = await client.pipeline.run({
-    input: upload,
-    pipeline_id: PIPELINE_ID,
-  });
-
-  console.log(`RUN PIPELINE`);
-
-  const fullResult = reductoResult?.result?.parse
-    ?.result as ParseResponse.FullResult;
-  const fullContent = fullResult.chunks[0].content;
-
-  console.log(`FULL CONTENT: ${fullContent}`);
-
-  const claimQuestions = await getClaimQuestions(fullContent);
-  console.log(`CLAIM QUESTIONS: ${JSON.stringify(claimQuestions, null, 2)}`);
-
-  const researchCandidateTavilyPayload = {
-    email,
-    questions: claimQuestions,
-    fullContent: fullContent,
-    id,
-  };
-
-  // upload resume to s3
-  console.log(`UPLOADING RESUME TO S3: ${id}`);
-  const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
-  if (!RESUME_S3_BUCKET_NAME)
-    throw new Error("RESUME_S3_BUCKET_NAME is not set");
-
-  const s3 = new S3({ region: "us-east-1" });
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: RESUME_S3_BUCKET_NAME,
-      Key: id,
-      Body: resume,
-    })
-  );
-
-  console.log(`UPLOADED RESUME TO S3: ${id}`);
-
-  // send to research agent lambda
-  const researchCandidateTavilyLambdaArn =
-    process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
-  if (!researchCandidateTavilyLambdaArn)
-    throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
-
-  console.log(
-    `INVOKING RESEARCH CANDIDATE TAVILY LAMBDA: ${researchCandidateTavilyLambdaArn}`
-  );
-  await new Lambda({ region: "us-east-1" }).invoke({
-    FunctionName: researchCandidateTavilyLambdaArn,
-    InvocationType: "Event",
-    Payload: JSON.stringify(researchCandidateTavilyPayload),
-  });
-
+async function sendEmail(email: string, subject: string, html: string) {
   // send email to user
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
   if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
-  const domain = process.env.DOMAIN;
-  if (!domain) throw new Error("DOMAIN is not set");
 
   console.log(`SENDING EMAIL TO USER: ${email}`);
   const resend = new Resend(RESEND_API_KEY);
 
-  const {data, error} = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: "resume-bs-detector@douglaschen.ca",
     to: email,
-    subject: "Your resume has been scanned for bullsh*t!",
-    html: `<p>Your resume has been processed. You can view the results <a href="https://${domain}?id=${id}">here</a>.</p>`,
+    subject,
+    html,
   });
 
   if (error) {
@@ -151,4 +65,108 @@ export const handler: Handler = async (event, context) => {
     console.log(`EMAIL SENT TO USER: ${email}`);
   }
   console.log(`DATA: ${JSON.stringify(data, null, 2)}`);
+}
+
+export const handler: Handler = async (event, context) => {
+  const { email, resumes } = event;
+  try {
+    const apiKey = process.env.REDUCTO_API_KEY;
+    if (!apiKey) {
+      throw new Error("REDUCTO_API_KEY is not set");
+    }
+
+    const PIPELINE_ID = process.env.PIPELINE_ID;
+    if (!PIPELINE_ID) {
+      throw new Error("PIPELINE_ID is not set");
+    }
+    if (resumes.length === 0)
+      throw new Error("At least one resumes is required");
+    if (resumes.length > 1)
+      console.warn(
+        "Only 1 resume is supported at this time, ignoring the rest"
+      );
+
+    const resume: string = resumes[0];
+    const client = new Reducto({ apiKey });
+
+    const id = randomUUID();
+    const filename = `${email}-${id}.pdf`;
+    const fileBuffer = Buffer.from(resume, "base64");
+
+    console.log(`UPLOADING RESUME TO REDUCTO: ${filename}`);
+    const upload = await client.upload({
+      file: await toFile(fileBuffer, filename, { type: "application/pdf" }),
+    });
+
+    console.log(`UPLOADED RESUME TO REDUCTO`);
+
+    const reductoResult = await client.pipeline.run({
+      input: upload,
+      pipeline_id: PIPELINE_ID,
+    });
+
+    console.log(`RUN PIPELINE`);
+
+    const fullResult = reductoResult?.result?.parse
+      ?.result as ParseResponse.FullResult;
+    const fullContent = fullResult.chunks[0].content;
+
+    console.log(`FULL CONTENT: ${fullContent}`);
+
+    const claimQuestions = await getClaimQuestions(fullContent);
+    console.log(`CLAIM QUESTIONS: ${JSON.stringify(claimQuestions, null, 2)}`);
+
+    const researchCandidateTavilyPayload = {
+      email,
+      questions: claimQuestions,
+      fullContent: fullContent,
+      id,
+    };
+
+    // upload resume to s3
+    console.log(`UPLOADING RESUME TO S3: ${id}`);
+    const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
+    if (!RESUME_S3_BUCKET_NAME)
+      throw new Error("RESUME_S3_BUCKET_NAME is not set");
+
+    const s3 = new S3({ region: "us-east-1" });
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: RESUME_S3_BUCKET_NAME,
+        Key: id,
+        Body: resume,
+      })
+    );
+
+    console.log(`UPLOADED RESUME TO S3: ${id}`);
+
+    // send to research agent lambda
+    const researchCandidateTavilyLambdaArn =
+      process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
+    if (!researchCandidateTavilyLambdaArn)
+      throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
+
+    console.log(
+      `INVOKING RESEARCH CANDIDATE TAVILY LAMBDA: ${researchCandidateTavilyLambdaArn}`
+    );
+    await new Lambda({ region: "us-east-1" }).invoke({
+      FunctionName: researchCandidateTavilyLambdaArn,
+      InvocationType: "Event",
+      Payload: JSON.stringify(researchCandidateTavilyPayload),
+    });
+
+    const domain = "https://resume-bs-detector-frontend.vercel.app";
+    await sendEmail(
+      email,
+      "Your resume has been scanned for bullsh*t!",
+      `<p>Your resume has been processed. You can view the results <a href="${domain}?id=${id}">here</a>.</p>`
+    );
+  } catch (error) {
+    await sendEmail(
+      email,
+      "Error processing your resume",
+      `<p>There was an error processing your resume:\n${JSON.stringify(error, null, 2)}</p>`
+    );
+  }
 };
