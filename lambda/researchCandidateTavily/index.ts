@@ -35,13 +35,22 @@ export const handler: Handler = async (event, context) => {
 
   const results = questions.map(async (question: string) => {
     const answer = await client.search(question, {
-      includeAnswer: "basic",
+      includeAnswer: "advanced",
       searchDepth: "advanced",
+      maxResults: 20,
     });
 
     return {
       question,
-      answer,
+      answer: {
+        ...answer,
+        results: answer.results.map((result) => {
+          return {
+            url: result.url,
+            score: result.score,
+          };
+        }),
+      },
     };
   });
 
