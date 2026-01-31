@@ -39,6 +39,9 @@ jobs:
           cd ../researchCandidateTavily
           npm ci
           npm run build
+          cd ../sendResume
+          npm ci
+          npm run build
       - name: CDK Deploy
         run: npx cdk deploy --require-approval never
         env:
