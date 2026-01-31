@@ -36,6 +36,13 @@ export const handler: Handler = async (event, context) => {
   const s3ObjectBody = await s3Object.Body?.transformToString();
   console.log(`S3 OBJECT BODY: ${s3ObjectBody?.slice(0, 20)}`);
 
+
+  const payload = {
+    result: result.Item,
+    resumePdf: s3ObjectBody,
+  }
+
+  console.log(`PAYLOAD: ${JSON.stringify(payload, null, 2)}`);
   return {
     statusCode: 200,
     headers: {
@@ -44,9 +51,6 @@ export const handler: Handler = async (event, context) => {
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
-    body: JSON.stringify({
-      result: result.Item,
-      resumePdf: s3ObjectBody,
-    }),
+    body: JSON.stringify(payload),
   }
 };
