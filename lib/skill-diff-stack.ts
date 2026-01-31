@@ -49,6 +49,8 @@ export class SkillDiffStack extends cdk.Stack {
       }
     );
 
+    researchCandidateTavilyLambda.grantInvoke(processResumeLambda);
+
     const sendResumeLambda = new lambda.Function(this, "SendResumeLambda", {
       code: lambda.Code.fromAsset("lambda/sendResume"),
       handler: "index.handler",

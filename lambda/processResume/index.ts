@@ -63,14 +63,20 @@ export const handler: Handler = async (event, context) => {
   const id = randomUUID();
   const filename = `${email}-${id}.pdf`;
   const fileBuffer = Buffer.from(resume, "base64");
+
+  console.log(`UPLOADING RESUME TO REDUCTO: ${filename}`);
   const upload = await client.upload({
     file: await toFile(fileBuffer, filename, { type: "application/pdf" }),
   });
+
+  console.log(`UPLOADED RESUME TO REDUCTO`);
 
   const reductoResult = await client.pipeline.run({
     input: upload,
     pipeline_id: PIPELINE_ID,
   });
+
+  console.log(`RUN PIPELINE`);
 
   const fullResult = reductoResult?.result?.parse
     ?.result as ParseResponse.FullResult;
