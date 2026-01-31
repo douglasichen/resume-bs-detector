@@ -47,15 +47,15 @@ export class SkillDiffStack extends cdk.Stack {
     super(scope, id, props);
 
 
-    const aiLambda = new lambda.Function(this, 'AiLambda', {
-      code: lambda.Code.fromAsset('lambda/ai'),
-      handler: 'index.handler',
-      runtime: lambda.Runtime.NODEJS_24_X,
-      timeout: Duration.seconds(60 * 10),
-      environment: {
-        OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
-      },
-    });
+    // const aiLambda = new lambda.Function(this, 'AiLambda', {
+    //   code: lambda.Code.fromAsset('lambda/ai'),
+    //   handler: 'index.handler',
+    //   runtime: lambda.Runtime.NODEJS_24_X,
+    //   timeout: Duration.seconds(60 * 10),
+    //   environment: {
+    //     OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
+    //   },
+    // });
     
     this.createSecureProcessResumeLambda();
 
