@@ -6,8 +6,25 @@ import { S3, GetObjectCommand } from "@aws-sdk/client-s3";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
+const headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export const handler: Handler = async (event, context) => {
   console.log(`EVENT: ${JSON.stringify(event, null, 2)}`);
+  
+  // Handle preflight OPTIONS request
+  if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: '',
+    };
+  }
+
   const id='6cfb9168-56b3-473f-87d0-4047e3dfa16e';
 
   const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
@@ -18,7 +35,7 @@ export const handler: Handler = async (event, context) => {
 
   const result = await docClient.send(new GetCommand({
     TableName: "research-candidate-tavily-db",
-    Key: { id: event.id },
+    Key: { id },
   }));
   console.log(`RESULT: ${JSON.stringify(result, null, 2)}`);
 
@@ -45,12 +62,7 @@ export const handler: Handler = async (event, context) => {
   console.log(`PAYLOAD: ${JSON.stringify(payload, null, 2)}`);
   return {
     statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
+    headers,
     body: JSON.stringify(payload),
   }
 };
