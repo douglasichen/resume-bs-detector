@@ -45,4 +45,4 @@ jobs:
           REDUCTO_API_KEY: ${{ secrets.REDUCTO_API_KEY }}
           PIPELINE_ID: ${{ secrets.PIPELINE_ID }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          # FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
