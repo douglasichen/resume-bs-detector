@@ -20,16 +20,6 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    const apiKey = process.env.REDUCTO_API_KEY;
-    if (!apiKey) {
-      throw new Error('REDUCTO_API_KEY is not set');
-    }
-
-    const PIPELINE_ID = process.env.PIPELINE_ID;
-    if (!PIPELINE_ID) {
-      throw new Error('PIPELINE_ID is not set');
-    }
-
     const body = JSON.parse(event.body || '{}');
     const email = body?.email || '';
     const resumes = body?.resumes || [];
