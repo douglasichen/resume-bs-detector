@@ -14,6 +14,7 @@ const env = {
   PIPELINE_ID: process.env.PIPELINE_ID || "",
   TAVILY_API_KEY: process.env.TAVILY_API_KEY || "",
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+  DOMAIN: process.env.DOMAIN || "",
 };
 
 export class SkillDiffStack extends cdk.Stack {
@@ -67,6 +68,7 @@ export class SkillDiffStack extends cdk.Stack {
           RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN: researchCandidateTavilyLambda.functionArn,
           RESUME_S3_BUCKET_NAME: resumeS3.bucketName,
           RESEND_API_KEY: env.RESEND_API_KEY,
+          DOMAIN: "https://resume-bs-detector-frontend.vercel.app",
         },
         timeout: Duration.seconds(60 * 10),
       }
