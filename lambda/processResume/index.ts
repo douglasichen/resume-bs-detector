@@ -7,6 +7,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { Lambda } from "@aws-sdk/client-lambda";
 import { S3, PutObjectCommand } from "@aws-sdk/client-s3";
+import { Resend } from "resend";
 
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -88,38 +89,66 @@ export const handler: Handler = async (event, context) => {
   const claimQuestions = await getClaimQuestions(fullContent);
   console.log(`CLAIM QUESTIONS: ${JSON.stringify(claimQuestions, null, 2)}`);
 
-
   const researchCandidateTavilyPayload = {
     email,
     questions: claimQuestions,
     fullContent: fullContent,
     id,
-  }
+  };
 
   // upload resume to s3
   console.log(`UPLOADING RESUME TO S3: ${id}`);
   const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
-  if (!RESUME_S3_BUCKET_NAME) throw new Error("RESUME_S3_BUCKET_NAME is not set");
+  if (!RESUME_S3_BUCKET_NAME)
+    throw new Error("RESUME_S3_BUCKET_NAME is not set");
 
   const s3 = new S3({ region: "us-east-1" });
 
-  await s3.send(new PutObjectCommand({
-    Bucket: RESUME_S3_BUCKET_NAME,
-    Key: id,
-    Body: resume,
-  }));
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: RESUME_S3_BUCKET_NAME,
+      Key: id,
+      Body: resume,
+    })
+  );
 
   console.log(`UPLOADED RESUME TO S3: ${id}`);
 
-
   // send to research agent lambda
-  const researchCandidateTavilyLambdaArn = process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
-  if (!researchCandidateTavilyLambdaArn) throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
+  const researchCandidateTavilyLambdaArn =
+    process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
+  if (!researchCandidateTavilyLambdaArn)
+    throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
 
-  console.log(`INVOKING RESEARCH CANDIDATE TAVILY LAMBDA: ${researchCandidateTavilyLambdaArn}`);
+  console.log(
+    `INVOKING RESEARCH CANDIDATE TAVILY LAMBDA: ${researchCandidateTavilyLambdaArn}`
+  );
   await new Lambda({ region: "us-east-1" }).invoke({
     FunctionName: researchCandidateTavilyLambdaArn,
     InvocationType: "Event",
     Payload: JSON.stringify(researchCandidateTavilyPayload),
   });
+
+  // send email to user
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not set");
+  const domain = process.env.DOMAIN;
+  if (!domain) throw new Error("DOMAIN is not set");
+
+  console.log(`SENDING EMAIL TO USER: ${email}`);
+  const resend = new Resend(RESEND_API_KEY);
+
+  const {data, error} = await resend.emails.send({
+    from: "resume-bs-detector@douglaschen.ca",
+    to: email,
+    subject: "Your resume has been scanned for bullsh*t!",
+    html: `<p>Your resume has been processed. You can view the results <a href="https://${domain}?id=${id}">here</a>.</p>`,
+  });
+
+  if (error) {
+    console.error(`ERROR SENDING EMAIL: ${error}`);
+  } else {
+    console.log(`EMAIL SENT TO USER: ${email}`);
+  }
+  console.log(`DATA: ${JSON.stringify(data, null, 2)}`);
 };

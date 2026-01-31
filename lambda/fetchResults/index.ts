@@ -25,7 +25,8 @@ export const handler: Handler = async (event, context) => {
     };
   }
 
-  const id='6cfb9168-56b3-473f-87d0-4047e3dfa16e';
+  const id=event.queryStringParameters?.id;
+  if (!id) throw new Error("id is required");
 
   const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
   if (!DYNAMODB_TABLE_NAME) throw new Error("DYNAMODB_TABLE_NAME is not set");
@@ -59,7 +60,7 @@ export const handler: Handler = async (event, context) => {
     resumePdf: s3ObjectBody,
   }
 
-  console.log(`PAYLOAD: ${JSON.stringify(payload, null, 2)}`);
+  console.log(`PAYLOAD: ${JSON.stringify(payload, null, 2).slice(0, 100)}`);
   return {
     statusCode: 200,
     headers,
