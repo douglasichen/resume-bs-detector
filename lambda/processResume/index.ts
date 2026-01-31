@@ -5,10 +5,20 @@ import { randomUUID } from 'crypto';
 const headers = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
 };
 
 export const handler: Handler = async (event, context) => {
+  // Handle preflight OPTIONS request
+  if (event.httpMethod === 'OPTIONS' || event.requestContext?.http?.method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: '',
+    };
+  }
+
   const apiKey = process.env.REDUCTO_API_KEY;
   if (!apiKey) {
     throw new Error('REDUCTO_API_KEY is not set');
@@ -19,8 +29,11 @@ export const handler: Handler = async (event, context) => {
     throw new Error('PIPELINE_ID is not set');
   }
 
-  const email = event?.email;
-  const resumes = event?.resumes || [];
+  // Parse the request body
+  const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+  
+  const email = body?.email;
+  const resumes = body?.resumes || [];
   if (resumes.length === 0) throw new Error('At least one resumes is required');
   if (resumes.length > 1) console.warn('Only 1 resume is supported at this time, ignoring the rest');
 
