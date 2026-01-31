@@ -2,6 +2,12 @@ import { Handler } from 'aws-lambda';
 import Reducto, { toFile } from 'reductoai';
 import { randomUUID } from 'crypto';
 
+const headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST',
+};
+
 export const handler: Handler = async (event, context) => {
   const apiKey = process.env.REDUCTO_API_KEY;
   if (!apiKey) {
@@ -33,5 +39,12 @@ export const handler: Handler = async (event, context) => {
     pipeline_id: PIPELINE_ID,
   });
 
-  return result;
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      id,
+      result,
+    }),
+  }
 };
