@@ -4,6 +4,8 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -26,34 +28,46 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
 const MAX_QUESTIONS = 20;
 
 export const handler: Handler = async (event, context) => {
-  const { questions: allQuestions, fullContent, email } = event;
+  const { questions: allQuestions, fullContent, email, id } = event;
   const questions = allQuestions.slice(0, MAX_QUESTIONS);
 
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) throw new Error("TAVILY_API_KEY is not set");
   const client = tavily({ apiKey });
 
-  const results = questions.map(async (question: string) => {
-    const answer = await client.search(question, {
+  const results = questions.map(async (question: string) => client.search(question, {
       includeAnswer: "advanced",
       searchDepth: "advanced",
       maxResults: 20,
-    });
-
-    return {
-      question,
-      answer: {
-        ...answer,
-        results: answer.results.map((result) => {
+    }).then((res) => {
+      return {
+        question: res.query,
+        answer: res.answer,
+        results: res.results.map((searchRes) => {
           return {
-            url: result.url,
-            score: result.score,
-          };
+            url: searchRes.url,
+            score: searchRes.score,
+          }
         }),
-      },
-    };
-  });
+      }
+    }));
 
   const awaitedResults = await Promise.all(results);
   console.log(`AWAITED RESULTS: ${JSON.stringify(awaitedResults, null, 2)}`);
+
+
+  // create unique db entry to store results to query by user
+
+  const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
+  if (!DYNAMODB_TABLE_NAME) throw new Error("DYNAMODB_TABLE_NAME is not set");
+
+  const dynamoDBClient = new DynamoDBClient({ region: "us-east-1" });
+  const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
+
+  await docClient.send(new PutCommand({
+    TableName: DYNAMODB_TABLE_NAME,
+    Item: { id, email, fullContent, results: awaitedResults }
+  }));
+  
+  console.log(`RESULTS STORED IN DYNAMODB at key: ${id}`);
 };

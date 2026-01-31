@@ -6,6 +6,7 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { Lambda } from "@aws-sdk/client-lambda";
+import { S3, PutObjectCommand } from "@aws-sdk/client-s3";
 
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -92,11 +93,30 @@ export const handler: Handler = async (event, context) => {
     email,
     questions: claimQuestions,
     fullContent: fullContent,
+    id,
   }
-  
+
+  // upload resume to s3
+  console.log(`UPLOADING RESUME TO S3: ${id}`);
+  const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
+  if (!RESUME_S3_BUCKET_NAME) throw new Error("RESUME_S3_BUCKET_NAME is not set");
+
+  const s3 = new S3({ region: "us-east-1" });
+
+  await s3.send(new PutObjectCommand({
+    Bucket: RESUME_S3_BUCKET_NAME,
+    Key: id,
+    Body: fileBuffer,
+  }));
+
+  console.log(`UPLOADED RESUME TO S3: ${id}`);
+
+
+  // send to research agent lambda
   const researchCandidateTavilyLambdaArn = process.env.RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN;
   if (!researchCandidateTavilyLambdaArn) throw new Error("RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN is not set");
 
+  console.log(`INVOKING RESEARCH CANDIDATE TAVILY LAMBDA: ${researchCandidateTavilyLambdaArn}`);
   await new Lambda({ region: "us-east-1" }).invoke({
     FunctionName: researchCandidateTavilyLambdaArn,
     InvocationType: "Event",
