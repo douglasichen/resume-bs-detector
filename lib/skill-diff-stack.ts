@@ -24,6 +24,7 @@ export class SkillDiffStack extends cdk.Stack {
         REDUCTO_API_KEY: env.REDUCTO_API_KEY,
         PIPELINE_ID: env.PIPELINE_ID,
       },
+      timeout: Duration.seconds(60 * 10),
     });
 
     const api = new apigateway.RestApi(this, 'ProcessResumeApi', {
