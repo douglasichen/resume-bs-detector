@@ -14,7 +14,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not set");
   }
-  const model = "openai/gpt-4o";
+  const model = "google/gemini-3-pro-preview";
 
   const result = await generateText({
     model: openrouter(model),
@@ -28,7 +28,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
 }
 
 async function getClaimQuestions(fullContent: string) {
-  const instructions = `Given the following resume, generate an array of questions for high signal claims. Always start question in the form: "Did {Full name} from {school} do {claim}? Don't ask too many questions, and also don't ask questions that are way too specific (metrics). Ask questions like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. Don't be too specific.`;
+  const instructions = `Given the following resume, generate an array of questions for high signal claims. Always start question in the form: "Did {Full name} from {school} do {claim}? Don't ask too many questions, and also don't ask questions that are way too specific (metrics). Ask questions like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. Keep the questions as short as possible and just try to do keyword search`;
 
   const prompt = `${instructions}\n\nResume:\n${fullContent}`;
 
