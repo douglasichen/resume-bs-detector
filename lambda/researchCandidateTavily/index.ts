@@ -13,7 +13,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not set");
   }
-  const model = "openai/gpt-4o";
+  const model = "google/gemini-3-pro-preview";
 
   const result = await generateText({
     model: openrouter(model),
@@ -85,7 +85,7 @@ export const handler: Handler = async (event, context) => {
   const awaitedResults = await Promise.all(results);
   const resultsWithVerification = await Promise.all(awaitedResults.map(async (res) => {
     const result = await ai<{ verification: "Verified" | "Unsure" | "Bullsh*t" }>(
-      `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified. If there is no proof of the claim it should be unsure. If there is a contrdiction with the claim, it should be Bullsh*t.`,
+      `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified (should be most prefered output option). If there is no proof of the claim it should be unsure. If there is a contradiction with the claim, it should be Bullsh*t.`,
       z.object({
         verification: z.enum(["Verified", "Unsure", "Bullsh*t"])
       })

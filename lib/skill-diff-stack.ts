@@ -109,16 +109,6 @@ export class SkillDiffStack extends cdk.Stack {
     const integration = new apigateway.LambdaIntegration(sendResumeLambda);
     api.root.addMethod("POST", integration);
 
-    // const researchCandidateLambda = new lambda.Function(this, 'ResearchCandidateLambda', {
-    //   code: lambda.Code.fromAsset('lambda/researchCandidate'),
-    //   handler: 'index.handler',
-    //   runtime: lambda.Runtime.NODEJS_24_X,
-    //   environment: {
-    //     FIRECRAWL_API_KEY,
-    //   },
-    //   timeout: Duration.seconds(60 * 10),
-    // });
-
 
 
     const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
