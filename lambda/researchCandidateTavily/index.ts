@@ -66,7 +66,7 @@ export const handler: Handler = async (event, context) => {
       .search(question, {
         includeAnswer: "advanced",
         searchDepth: "advanced",
-        maxResults: 20,
+        maxResults: 10,
       })
       .then(async (res) => {
         return {
