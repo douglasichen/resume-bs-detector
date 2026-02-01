@@ -40,6 +40,8 @@ export class SkillDiffStack extends cdk.Stack {
         environment: {
           TAVILY_API_KEY: env.TAVILY_API_KEY,
           DYNAMODB_TABLE_NAME: db.tableName,
+          RESEND_API_KEY: env.RESEND_API_KEY,
+          OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
         },
         timeout: Duration.seconds(60 * 10),
       }
