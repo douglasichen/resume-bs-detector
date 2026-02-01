@@ -33,9 +33,6 @@ jobs:
           cd lambda/processResume
           npm ci
           npm run build
-          cd ../researchCandidate
-          npm ci
-          npm run build
           cd ../researchCandidateTavily
           npm ci
           npm run build
