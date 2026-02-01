@@ -35,39 +35,52 @@ export const handler: Handler = async (event, context) => {
   if (!apiKey) throw new Error("TAVILY_API_KEY is not set");
   const client = tavily({ apiKey });
 
-  const results = questions.map(async (question: string) => client.search(question, {
-      includeAnswer: "advanced",
-      searchDepth: "advanced",
-      maxResults: 20,
-    }).then((res) => {
-      return {
-        question: res.query,
-        answer: res.answer,
-        results: res.results.map((searchRes) => {
-          return {
-            url: searchRes.url,
-            score: searchRes.score,
-          }
-        }),
-      }
-    }));
+  const results = questions.map(async (question: string) =>
+    client
+      .search(question, {
+        includeAnswer: "advanced",
+        searchDepth: "advanced",
+        maxResults: 20,
+      })
+      .then(async (res) => {
+        return {
+          question: res.query,
+          answer: res.answer,
+          results: res.results.map((searchRes) => {
+            return {
+              url: searchRes.url,
+              score: searchRes.score,
+            };
+          }),
+        };
+      })
+  );
 
   const awaitedResults = await Promise.all(results);
-  console.log(`AWAITED RESULTS: ${JSON.stringify(awaitedResults, null, 2)}`);
-
+  const resultsWithVerification = await Promise.all(awaitedResults.map(async (res) => {
+    return {
+      ...res,
+      verification: await ai<"Verified" | "Unsure" | "Bullsh*t">(
+        `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified. If there is no proof of the claim it should be unsure. If there is a contrdiction with the claim, it should be Bullsh*t.`,
+        z.enum(["Verified", "Unsure", "Bullsh*t"])
+      ),
+    };
+  }));
+  console.log(`Verification Results: ${JSON.stringify(resultsWithVerification, null, 2)}`);
 
   // create unique db entry to store results to query by user
-
   const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
   if (!DYNAMODB_TABLE_NAME) throw new Error("DYNAMODB_TABLE_NAME is not set");
 
   const dynamoDBClient = new DynamoDBClient({ region: "us-east-1" });
   const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
 
-  await docClient.send(new PutCommand({
-    TableName: DYNAMODB_TABLE_NAME,
-    Item: { id, email, fullContent, results: awaitedResults }
-  }));
-  
+  await docClient.send(
+    new PutCommand({
+      TableName: DYNAMODB_TABLE_NAME,
+      Item: { id, email, fullContent, results: resultsWithVerification },
+    })
+  );
+
   console.log(`RESULTS STORED IN DYNAMODB at key: ${id}`);
 };
