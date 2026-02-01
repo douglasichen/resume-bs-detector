@@ -84,12 +84,15 @@ export const handler: Handler = async (event, context) => {
 
   const awaitedResults = await Promise.all(results);
   const resultsWithVerification = await Promise.all(awaitedResults.map(async (res) => {
+    const result = await ai<{ verification: "Verified" | "Unsure" | "Bullsh*t" }>(
+      `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified. If there is no proof of the claim it should be unsure. If there is a contrdiction with the claim, it should be Bullsh*t.`,
+      z.object({
+        verification: z.enum(["Verified", "Unsure", "Bullsh*t"])
+      })
+    );
     return {
       ...res,
-      verification: await ai<"Verified" | "Unsure" | "Bullsh*t">(
-        `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified. If there is no proof of the claim it should be unsure. If there is a contrdiction with the claim, it should be Bullsh*t.`,
-        z.enum(["Verified", "Unsure", "Bullsh*t"])
-      ),
+      verification: result.verification,
     };
   }));
   console.log(`Verification Results: ${JSON.stringify(resultsWithVerification, null, 2)}`);
