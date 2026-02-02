@@ -9,6 +9,9 @@ import { Lambda } from "@aws-sdk/client-lambda";
 import { S3, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Resend } from "resend";
 
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
@@ -67,9 +70,48 @@ async function sendEmail(email: string, subject: string, html: string) {
   console.log(`DATA: ${JSON.stringify(data, null, 2)}`);
 }
 
+type AnalyticsData = {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  companyOrSchool: string;
+};
+
+async function recordAnalytics(analyticsData: AnalyticsData) {
+  const ANALYTICS_DB_TABLE_NAME = process.env.ANALYTICS_DB_TABLE_NAME;
+  if (!ANALYTICS_DB_TABLE_NAME)
+    throw new Error("DYNAMODB_TABLE_NAME is not set");
+
+  const dynamoDBClient = new DynamoDBClient({ region: "us-east-1" });
+  const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
+
+  await docClient.send(
+    new PutCommand({
+      TableName: ANALYTICS_DB_TABLE_NAME,
+      Item: analyticsData,
+    })
+  );
+}
+
 export const handler: Handler = async (event, context) => {
-  const { email, resumes } = event;
+  // everything except resumes is info about the submitter.
+  const { email, resumes, role, name, companyOrSchool } = event;
   try {
+    const id = randomUUID();
+    const analyticsData: AnalyticsData = {
+      id,
+      email,
+      role,
+      name,
+      companyOrSchool,
+    };
+    await recordAnalytics(analyticsData).catch((error: any) => {
+      console.warn(
+        `Error recording analytics - but failing gracefully: ${error}`
+      );
+    });
+
     const apiKey = process.env.REDUCTO_API_KEY;
     if (!apiKey) {
       throw new Error("REDUCTO_API_KEY is not set");
@@ -89,7 +131,6 @@ export const handler: Handler = async (event, context) => {
     const resume: string = resumes[0];
     const client = new Reducto({ apiKey });
 
-    const id = randomUUID();
     const filename = `${email}-${id}.pdf`;
     const fileBuffer = Buffer.from(resume, "base64");
 
@@ -159,7 +200,11 @@ export const handler: Handler = async (event, context) => {
     await sendEmail(
       email,
       "Error processing your resume",
-      `<p>There was an error processing your resume:\n${JSON.stringify(error, null, 2)}</p>`
+      `<p>There was an error processing your resume:\n${JSON.stringify(
+        error,
+        null,
+        2
+      )}</p>`
     );
   }
 };

@@ -13,8 +13,10 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.980.0",
     "@aws-sdk/client-lambda": "^3.980.0",
     "@aws-sdk/client-s3": "^3.980.0",
+    "@aws-sdk/lib-dynamodb": "^3.981.0",
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "reductoai": "^0.13.0",
     "resend": "^6.9.1",

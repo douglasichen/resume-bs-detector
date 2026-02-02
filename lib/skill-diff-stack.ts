@@ -56,6 +56,14 @@ export class SkillDiffStack extends cdk.Stack {
       bucketName: "skill-diff-resume-s3-bucket",
     });
 
+    const analyticsDb = new dynamodb.Table(this, "AnalyticsDb", {
+      tableName: "analytics-db",
+      partitionKey: { name: "id", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PROVISIONED,
+      readCapacity: 25,
+      writeCapacity: 25,
+    });
+
     const processResumeLambda = new lambda.Function(
       this,
       "ProcessResumeLambda",
@@ -70,10 +78,12 @@ export class SkillDiffStack extends cdk.Stack {
           RESEARCH_CANDIDATE_TAVILY_LAMBDA_ARN: researchCandidateTavilyLambda.functionArn,
           RESUME_S3_BUCKET_NAME: resumeS3.bucketName,
           RESEND_API_KEY: env.RESEND_API_KEY,
+          ANALYTICS_DB_TABLE_NAME: analyticsDb.tableName,
         },
         timeout: Duration.seconds(60 * 10),
       }
     );
+    analyticsDb.grantReadWriteData(processResumeLambda);
 
     researchCandidateTavilyLambda.grantInvoke(processResumeLambda);
 
