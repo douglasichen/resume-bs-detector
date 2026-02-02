@@ -91,7 +91,8 @@ export const handler: Handler = async (event, context) => {
           JSON.stringify({
             question: res.question,
             answer: res.answer,
-            results: res.results,
+            // Remove results for now to save on costs. results with URL and similarity score does not seem as relevant.
+            // results: res.results,
             prompt,
           }),
           z.object({
