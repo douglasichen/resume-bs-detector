@@ -2,7 +2,8 @@
 
 An AI-powered serverless application that fact-checks resume claims using web search and advanced language models. Built with AWS CDK, this system automatically verifies skills, achievements, and experiences listed on resumes.
 
-![AWS Architecture](./public/resume-bs-detector-aws-architecture.png)
+<!-- ![AWS Architecture](./public/resume-bs-detector-aws-architecture.png) -->
+Architecture diagram coming soon...
 
 ## 🚀 Features
 
