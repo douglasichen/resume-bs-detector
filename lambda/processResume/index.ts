@@ -86,6 +86,8 @@ async function recordAnalytics(analyticsData: AnalyticsData) {
   const dynamoDBClient = new DynamoDBClient({ region: "us-east-1" });
   const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
 
+  console.log(`RECORDING ANALYTICS: ${JSON.stringify(analyticsData, null, 2)}`);
+
   await docClient.send(
     new PutCommand({
       TableName: ANALYTICS_DB_TABLE_NAME,
