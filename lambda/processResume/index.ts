@@ -152,6 +152,31 @@ export const handler: Handler = async (event, context) => {
       );
 
     const resume: string = resumes[0];
+
+    // upload resume to s3
+    console.log(`UPLOADING RESUME TO S3: ${id}`);
+    const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
+    if (!RESUME_S3_BUCKET_NAME)
+      throw new Error("RESUME_S3_BUCKET_NAME is not set");
+
+    const s3 = new S3({ region: "us-east-1" });
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: RESUME_S3_BUCKET_NAME,
+        Key: id,
+        Body: resume,
+      })
+    );
+
+    console.log(`UPLOADED RESUME TO S3: ${id}`);
+
+    // return early since budget is exceeded. The following submission is just saved for reference.
+    console.log(`Returning early since budget is exceeded. The following submission is just saved to s3 and analytics db: ${JSON.stringify(analyticsData, null, 2)}. The resume will not be processed.`);
+
+    return;
+
+
     const client = new Reducto({ apiKey });
 
     const filename = `${email}-${id}.pdf`;
@@ -166,7 +191,7 @@ export const handler: Handler = async (event, context) => {
 
     const reductoResult = await client.pipeline.run({
       input: upload,
-      pipeline_id: PIPELINE_ID,
+      pipeline_id: PIPELINE_ID || "",
     });
 
     console.log(`RUN PIPELINE`);
@@ -187,23 +212,6 @@ export const handler: Handler = async (event, context) => {
       id,
     };
 
-    // upload resume to s3
-    console.log(`UPLOADING RESUME TO S3: ${id}`);
-    const RESUME_S3_BUCKET_NAME = process.env.RESUME_S3_BUCKET_NAME;
-    if (!RESUME_S3_BUCKET_NAME)
-      throw new Error("RESUME_S3_BUCKET_NAME is not set");
-
-    const s3 = new S3({ region: "us-east-1" });
-
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: RESUME_S3_BUCKET_NAME,
-        Key: id,
-        Body: resume,
-      })
-    );
-
-    console.log(`UPLOADED RESUME TO S3: ${id}`);
 
     // send to research agent lambda
     const researchCandidateTavilyLambdaArn =
