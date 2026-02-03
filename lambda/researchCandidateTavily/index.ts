@@ -13,7 +13,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   if (!OPENROUTER_API_KEY) {
     throw new Error("OPENROUTER_API_KEY is not set");
   }
-  const model = "google/gemini-3-pro-preview";
+  const model = "google/gemini-3-flash-preview";
 
   const result = await generateText({
     model: openrouter(model),
