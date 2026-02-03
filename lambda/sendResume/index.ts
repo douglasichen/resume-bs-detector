@@ -1,6 +1,4 @@
 import { Handler } from "aws-lambda";
-import Reducto, { toFile } from "reductoai";
-import { randomUUID } from "crypto";
 import { Lambda } from "@aws-sdk/client-lambda";
 
 const headers = {
