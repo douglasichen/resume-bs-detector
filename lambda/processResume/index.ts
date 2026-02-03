@@ -31,7 +31,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
 }
 
 async function getClaimQuestions(fullContent: string) {
-  const instructions = `Given the following resume, generate an array of search queries for high signal claims. Always start queries in the form: "{Full name}, {school}, {claim}? Don't ask too many queries, and also don't ask queries that are way too specific (metrics). Ask queries like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. Keep the questions as short as possible and just try to do keyword search. At least 10 questions.`;
+  const instructions = `Given the following resume, generate an array of search queries for high signal claims. Always start queries in the form: "{Full name}, {school}, {claim}? Don't ask too many queries, and also don't ask queries that are way too specific (metrics). Ask queries like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. Keep the questions as short as possible and just try to do keyword search. At least 5 questions.`;
 
   const prompt = `${instructions}\n\nResume:\n${fullContent}`;
 

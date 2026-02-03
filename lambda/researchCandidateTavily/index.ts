@@ -26,7 +26,7 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   return result.output as T;
 }
 
-const MAX_QUESTIONS = 20;
+const MAX_QUESTIONS = 10;
 
 async function sendEmail(email: string, subject: string, html: string) {
   // send email to user
