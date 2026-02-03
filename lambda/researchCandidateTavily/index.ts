@@ -51,6 +51,27 @@ async function sendEmail(email: string, subject: string, html: string) {
   console.log(`DATA: ${JSON.stringify(data, null, 2)}`);
 }
 
+async function handleError(email: string, error: any) {
+  const stringError = JSON.stringify(error).toLowerCase();
+  let emailContent = "No email content";
+  if (
+    stringError.includes("limit") ||
+    stringError.includes("quota") ||
+    stringError.includes("rate limit") ||
+    stringError.includes("too many requests") ||
+    stringError.includes("exceed")
+  ) {
+    emailContent = `Unfortunately there has been too many requests for the Resume Bullsh*t Detector (hit my budget... sorry im a student...). Please try again later or sign up for the closed beta access <a href="https://docs.google.com/forms/d/e/1FAIpQLSfg_zNuAeGusQI-N5Ps7aDXtbsPsIa8weGddXVL7GXxOcrEnw/viewform?usp=publish-editor">here</a>.`;
+  } else {
+    emailContent = `<p>There was an error processing your resume:\n${JSON.stringify(
+      error,
+      null,
+      2
+    )}</p>`;
+  }
+  await sendEmail(email, "Error processing your resume", emailContent);
+}
+
 export const handler: Handler = async (event, context) => {
   const { questions: allQuestions, fullContent, email, id } = event;
   const questions = allQuestions.slice(0, MAX_QUESTIONS);
@@ -139,14 +160,6 @@ export const handler: Handler = async (event, context) => {
     console.error(
       `Error processing your resume: ${JSON.stringify(error, null, 2)}`
     );
-    await sendEmail(
-      email,
-      "Error processing your resume",
-      `<p>There was an error processing your resume:\n${JSON.stringify(
-        error,
-        null,
-        2
-      )}</p>`
-    );
+    await handleError(email, error);
   }
 };

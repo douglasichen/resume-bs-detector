@@ -96,6 +96,27 @@ async function recordAnalytics(analyticsData: AnalyticsData) {
   );
 }
 
+async function handleError(email: string, error: any) {
+  const stringError = JSON.stringify(error).toLowerCase();
+  let emailContent = "No email content";
+  if (
+    stringError.includes("limit") ||
+    stringError.includes("quota") ||
+    stringError.includes("rate limit") ||
+    stringError.includes("too many requests") ||
+    stringError.includes("exceed")
+  ) {
+    emailContent = `Unfortunately there has been too many requests for the Resume Bullsh*t Detector (hit my budget... sorry im a student...). Please try again later or sign up for the closed beta access <a href="https://docs.google.com/forms/d/e/1FAIpQLSfg_zNuAeGusQI-N5Ps7aDXtbsPsIa8weGddXVL7GXxOcrEnw/viewform?usp=publish-editor">here</a>.`;
+  } else {
+    emailContent = `<p>There was an error processing your resume:\n${JSON.stringify(
+      error,
+      null,
+      2
+    )}</p>`;
+  }
+  await sendEmail(email, "Error processing your resume", emailContent);
+}
+
 export const handler: Handler = async (event, context) => {
   // everything except resumes is info about the submitter.
   const { email, resumes, role, name, companyOrSchool } = event;
@@ -199,14 +220,6 @@ export const handler: Handler = async (event, context) => {
       Payload: JSON.stringify(researchCandidateTavilyPayload),
     });
   } catch (error) {
-    await sendEmail(
-      email,
-      "Error processing your resume",
-      `<p>There was an error processing your resume:\n${JSON.stringify(
-        error,
-        null,
-        2
-      )}</p>`
-    );
+    await handleError(email, error);
   }
 };
