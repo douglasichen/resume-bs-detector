@@ -76,23 +76,25 @@ async function sendEmail(email: string, subject: string, html: string) {
 }
 
 async function handleError(email: string, error: any) {
-  const stringError = JSON.stringify(error).toLowerCase();
-  let emailContent = "No email content";
-  if (
-    stringError.includes("limit") ||
-    stringError.includes("quota") ||
-    stringError.includes("rate limit") ||
-    stringError.includes("too many requests") ||
-    stringError.includes("exceed")
-  ) {
-    emailContent = `Unfortunately there has been too many requests for the Resume Bullsh*t Detector (hit my budget... sorry im a student...). Please try again later or sign up for the closed beta access <a href="https://docs.google.com/forms/d/e/1FAIpQLSfg_zNuAeGusQI-N5Ps7aDXtbsPsIa8weGddXVL7GXxOcrEnw/viewform?usp=publish-editor">here</a>.`;
-  } else {
-    emailContent = `<p>There was an error processing your resume:\n${JSON.stringify(
-      error,
-      null,
-      2
-    )}</p>`;
-  }
+  // const stringError = JSON.stringify(error).toLowerCase();
+  // let emailContent = "No email content";
+  // if (
+  //   stringError.includes("limit") ||
+  //   stringError.includes("quota") ||
+  //   stringError.includes("rate limit") ||
+  //   stringError.includes("too many requests") ||
+  //   stringError.includes("exceed")
+  // ) {
+  //   emailContent = `Unfortunately there has been too many requests for the Resume Bullsh*t Detector (hit my budget... sorry im a student...). Please try again later or sign up for the closed beta access <a href="https://docs.google.com/forms/d/e/1FAIpQLSfg_zNuAeGusQI-N5Ps7aDXtbsPsIa8weGddXVL7GXxOcrEnw/viewform?usp=publish-editor">here</a>.`;
+  // } else {
+  //   emailContent = `<p>There was an error processing your resume:\n${JSON.stringify(
+  //     error,
+  //     null,
+  //     2
+  //   )}</p>`;
+  // }
+  console.error(`ERROR PROCESSING RESUME: ${JSON.stringify(error, null, 2)}`);
+  const emailContent = `<p>There was an error processing your resume:\n${JSON.stringify(error, null, 2)}</p>`;
   await sendEmail(email, "Error processing your resume", emailContent);
 }
 
