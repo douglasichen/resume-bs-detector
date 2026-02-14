@@ -1,7 +1,7 @@
 import { Handler } from "aws-lambda";
 import Reducto, { toFile } from "reductoai";
 import { randomUUID } from "crypto";
-import { ParseResponse } from "reductoai/src/resources/shared";
+import { ParseResponse } from "reductoai/resources/shared";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
