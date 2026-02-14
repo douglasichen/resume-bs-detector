@@ -107,16 +107,18 @@ export const handler: Handler = async (event, context) => {
     if (!apiKey) throw new Error("TAVILY_API_KEY is not set");
     const client = tavily({ apiKey });
 
-    const results = questions.map(async (question: string) =>
+    // note that the search actually uses the query as input. the question is for later on (ai verification label step)
+    const results = questions.map(async (question: { question: string, query: string }) =>
       client
-        .search(question, {
+        .search(question.query, {
           includeAnswer: "advanced",
           searchDepth: "advanced",
           maxResults: 10,
         })
         .then(async (res) => {
           return {
-            question: res.query,
+            question: question.question,
+            query: question.query,
             answer: res.answer,
             results: res.results.map((searchRes) => {
               return {
