@@ -8,6 +8,9 @@ import { z } from "zod";
 import { Lambda } from "@aws-sdk/client-lambda";
 import { S3, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Resend } from "resend";
+import { GoogleGenAI } from "@google/genai";
+
+
 
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -30,6 +33,29 @@ async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   return result.output as T;
 }
 
+async function aiGeminiAPI<T>(prompt: string, outputSchema: z.ZodType<any>): Promise<T> {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set");
+  }
+  const model = "gemini-3-flash-preview"
+  const gemini = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const response = await gemini.models.generateContent({
+    model,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: z.toJSONSchema(outputSchema),
+    },
+  });
+  
+  if (!response.text) {
+    throw new Error("No response from Gemini API");
+  }
+  const output = JSON.parse(response.text);
+  return output as T;
+}
+
 async function getClaimQuestions(fullContent: string) {
   const instructions = `Given the following resume, generate an array of search queries for high signal claims. Always start queries in the form: "{Full name}, {school}, {claim}? Don't ask too many queries, and also don't ask queries that are way too specific (metrics). Ask queries like did they win hackathon y, or did they actually build project x. Keep in mind you are only given SWE resumes, so don't ask questions that are not related to SWE. Keep the questions as short as possible and just try to do keyword search. At least 5 questions.`;
 
@@ -43,7 +69,7 @@ async function getClaimQuestions(fullContent: string) {
   });
   type SchemaType = z.infer<typeof schema>;
 
-  const result = await ai<SchemaType>(prompt, schema);
+  const result = await aiGeminiAPI<SchemaType>(prompt, schema);
   return result.questions;
 }
 
@@ -172,9 +198,12 @@ export const handler: Handler = async (event, context) => {
     console.log(`UPLOADED RESUME TO S3: ${id}`);
 
     // return early since budget is exceeded. The following submission is just saved for reference.
-    console.log(`Returning early since budget is exceeded. The following submission is just saved to s3 and analytics db: ${JSON.stringify(analyticsData, null, 2)}. The resume will not be processed.`);
+    // console.log(`Returning early since budget is exceeded. The following submission is just saved to s3 and analytics db: ${JSON.stringify(analyticsData, null, 2)}. The resume will not be processed.`);
 
-    return;
+    // return;
+
+
+    // re-enabled!!!
 
 
     const client = new Reducto({ apiKey });

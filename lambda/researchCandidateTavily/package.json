@@ -15,6 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.980.0",
     "@aws-sdk/lib-dynamodb": "^3.980.0",
+    "@google/genai": "^1.41.0",
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "@tavily/core": "^0.7.1",
     "resend": "^6.9.1",

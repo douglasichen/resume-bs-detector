@@ -15,6 +15,7 @@ const env = {
   TAVILY_API_KEY: process.env.TAVILY_API_KEY || "",
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",
   DOMAIN: process.env.DOMAIN || "",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
 };
 
 export class SkillDiffStack extends cdk.Stack {
@@ -42,6 +43,7 @@ export class SkillDiffStack extends cdk.Stack {
           DYNAMODB_TABLE_NAME: db.tableName,
           RESEND_API_KEY: env.RESEND_API_KEY,
           OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
+          GEMINI_API_KEY: env.GEMINI_API_KEY,
         },
         timeout: Duration.seconds(60 * 10),
       }
@@ -79,6 +81,7 @@ export class SkillDiffStack extends cdk.Stack {
           RESUME_S3_BUCKET_NAME: resumeS3.bucketName,
           RESEND_API_KEY: env.RESEND_API_KEY,
           ANALYTICS_DB_TABLE_NAME: analyticsDb.tableName,
+          GEMINI_API_KEY: env.GEMINI_API_KEY,
         },
         timeout: Duration.seconds(60 * 10),
       }
@@ -86,7 +89,6 @@ export class SkillDiffStack extends cdk.Stack {
     analyticsDb.grantReadWriteData(processResumeLambda);
 
     researchCandidateTavilyLambda.grantInvoke(processResumeLambda);
-
 
     resumeS3.grantReadWrite(processResumeLambda);
 

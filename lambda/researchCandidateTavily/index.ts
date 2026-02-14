@@ -4,9 +4,33 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { Resend } from "resend";
-
+import { GoogleGenAI } from "@google/genai";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+
+
+async function aiGeminiAPI<T>(prompt: string, outputSchema: z.ZodType<any>): Promise<T> {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set");
+  }
+  const model = "gemini-3-flash-preview"
+  const gemini = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const response = await gemini.models.generateContent({
+    model,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: z.toJSONSchema(outputSchema),
+    },
+  });
+  
+  if (!response.text) {
+    throw new Error("No response from Gemini API");
+  }
+  const output = JSON.parse(response.text);
+  return output as T;
+}
 
 async function ai<T>(prompt: string, outputSchema: z.ZodSchema): Promise<T> {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -106,7 +130,7 @@ export const handler: Handler = async (event, context) => {
     const resultsWithVerification = await Promise.all(
       awaitedResults.map(async (res) => {
         const prompt = `Given the following question, answer and source results, determine if the claim is Verified, Unsure, or Bullsh*t. If there is somewhat proof of the claim, it should be Verified (should be most prefered output option). If there is no proof of the claim it should be unsure. If there is a contradiction with the claim, it should be Bullsh*t.`;
-        const result = await ai<{
+        const result = await aiGeminiAPI<{
           verification: "Verified" | "Unsure" | "Bullsh*t";
         }>(
           JSON.stringify({
